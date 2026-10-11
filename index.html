@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>7D App - Promociones Locales</title>
+  <meta name="theme-color" content="#12101F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="7D App">
+  <meta name="description" content="7D App - Las mejores ofertas y promociones de tu ciudad esta semana. Contacta directo por WhatsApp.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Firebase SDK v10 (compat for clean bundle-free browser execution) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <!-- Aurora Borealis Animated Ambient Background (Pure CSS) -->
+  <div class="aurora-bg" aria-hidden="true"></div>
+
+  <!-- App Container (Responsive: Mobile centered, tablet/desktop optimized) -->
+  <div id="app" class="app-root">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand" onclick="app.showScreen('feed')">
+          <img class="brand-badge" src="icons/icon.svg" alt="7D" />
+          <div class="brand-text">
+            <span class="brand-name">7D App</span>
+            <span class="brand-tagline">Promociones de la semana</span>
+          </div>
+        </div>
+        
+        <div class="header-actions">
+          <button id="city-pill-btn" class="pill-btn" onclick="app.openCityModal()" title="Seleccionar Ciudad">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <span id="current-city-label">El Tigre</span>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          </button>
+          
+          <button class="icon-btn" onclick="app.openAdminModal()" title="Panel de Administración">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- PWA Install Prompt Banner (Mobile-First) -->
+    <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
+      <div class="pwa-banner-content">
+        <div class="pwa-banner-icon">7D</div>
+        <div class="pwa-banner-text">
+          <strong>Instalar 7D App</strong>
+          <span>Acceso rápido y pantalla completa en tu teléfono</span>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button class="btn btn-primary btn-sm" onclick="app.promptInstall()">Instalar</button>
+        <button class="icon-btn icon-btn-sm" onclick="app.dismissInstallPrompt()" title="Descartar">✕</button>
+      </div>
+    </div>
+
+    <!-- MAIN VIEWS -->
+    <main class="app-main">
+      
+      <!-- SCREEN 1: FEED / HOME -->
+      <section id="screen-feed" class="screen active">
+        <!-- Hero banner -->
+        <div class="hero-banner">
+          <div class="hero-content">
+            <div class="hero-badge">🔥 CARGANDO...</div>
+            <h1 class="hero-title">¿Qué hay esta semana?</h1>
+            <p class="hero-sub">Descubre ofertas exclusivas en comercios locales cerca de ti</p>
+            <div class="hero-footer-row">
+              <button class="hero-share-btn" onclick="app.shareApp()" title="Compartir App">
+                <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                <span>Compartir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Horizontal Slider -->
+        <div class="categories-bar">
+          <div class="categories-scroll" id="categories-container">
+            <!-- Dynamically populated categories -->
+          </div>
+        </div>
+
+        <!-- Feed Stats & Filter indicator -->
+        <div class="feed-subbar">
+          <div class="feed-count">
+            <span id="active-promos-count">0</span> promociones activas
+          </div>
+          <div class="feed-active-filter" id="active-filter-badge" style="display: none;">
+            <span id="active-filter-text">Filtro</span>
+            <button onclick="app.clearCategoryFilter()" class="clear-filter-btn">×</button>
+          </div>
+        </div>
+
+        <!-- Promotion Cards Grid (Responsive 1-3 columns) -->
+        <div id="promotions-grid" class="promos-grid">
+          <!-- Dynamically populated cards -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon">🏷️</div>
+          <h3>No hay promociones en este momento</h3>
+          <p>Prueba seleccionando otra ciudad o sé el primer comercio en publicar.</p>
+          <button class="btn btn-secondary" onclick="app.showScreen('publish')">Publicar promoción ahora</button>
+        </div>
+      </section>
+
+      <!-- SCREEN: SELECCIONA TU CIUDAD (DIRECTORIO COMERCIAL) -->
+      <section id="screen-cities" class="screen">
+        <div class="cities-container">
+          <div class="cities-header-nav">
+            <button class="circle-btn" onclick="app.showScreen('feed')" title="Volver al inicio">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h2 class="cities-page-title">Directorio de Ciudades</h2>
+          </div>
+
+          <div class="cities-hero-banner">
+            <div class="cities-hero-icon">📍</div>
+            <h3 class="cities-hero-title">Elige tu localidad</h3>
+            <p class="cities-hero-sub">Explora las ofertas activas vigentes durante 7 días en cada zona comercial.</p>
+          </div>
+
+          <div id="cities-page-list" class="cities-grid-layout">
+            <!-- Dynamically populated city cards -->
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: PROMOTION DETAIL -->
+      <section id="screen-detail" class="screen">
+        <div class="detail-container">
+          <div class="detail-header-nav">
+            <button class="circle-btn" onclick="app.showScreen('feed')" title="Volver">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <button class="circle-btn" onclick="app.shareCurrentPromo()" title="Compartir">
+              <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+            </button>
+          </div>
+
+          <div class="detail-layout">
+            <!-- Left: Hero Flyer -->
+            <div class="detail-image-box" onclick="app.openFullScreenImage()">
+              <img id="detail-image" src="" alt="Flyer de la promoción">
+              <div class="fullscreen-hint">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <span>Pantalla completa</span>
+              </div>
+            </div>
+
+            <!-- Right: Details & CTA -->
+            <div class="detail-info-box">
+              <div class="detail-meta">
+                <span class="detail-business" id="detail-business">COMERCIO</span>
+                <span class="detail-city" id="detail-city">El Tigre</span>
+              </div>
+
+              <h2 class="detail-title" id="detail-title">Título de la promoción</h2>
+
+              <div class="detail-section-title">DETALLES DE LA PROMOCIÓN</div>
+              <p class="detail-description" id="detail-description">Descripción completa de la oferta</p>
+
+              <div id="detail-socials" class="detail-socials" style="display: none;">
+                <div class="detail-section-title">REDES SOCIALES</div>
+                <div class="social-buttons-row">
+                  <a id="detail-instagram-link" class="social-btn instagram" target="_blank" rel="noopener">
+                    <span>📸</span> <span id="detail-instagram-label">Instagram</span>
+                  </a>
+                  <a id="detail-tiktok-link" class="social-btn tiktok" target="_blank" rel="noopener">
+                    <span>🎵</span> <span id="detail-tiktok-label">TikTok</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Sticky / CTA Action -->
+              <div class="detail-action-card">
+                <div class="clicks-info">
+                  <span class="clicks-chip">🔥 <span id="detail-clicks-count">0</span> personas interesadas</span>
+                </div>
+                <button class="btn btn-whatsapp btn-large" onclick="app.handleQuieroClick(app.currentPromo)">
+                  <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67Z"/></svg>
+                  <span>Quiero</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: USER PUBLISH FORM -->
+      <section id="screen-publish" class="screen">
+        <div class="publish-card">
+          <div class="publish-header">
+            <button class="circle-btn" onclick="app.showScreen('feed')" title="Volver al inicio">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <h2 class="publish-title">Publicar Promoción</h2>
+          </div>
+
+          <!-- Multi-step Indicator -->
+          <div class="step-indicator">
+            <div class="step-item" id="step-dot-1">
+              <div class="step-num">1</div>
+              <span class="step-name">Datos</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="step-dot-2">
+              <div class="step-num">2</div>
+              <span class="step-name">Preview</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="step-dot-3">
+              <div class="step-num">3</div>
+              <span class="step-name">Pago</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="step-dot-4">
+              <div class="step-num">4</div>
+              <span class="step-name">Listo</span>
+            </div>
+          </div>
+
+          <!-- STEP 1: FORM -->
+          <div id="publish-step-1" class="publish-step-content active">
+            <h3 class="form-section-header">INFORMACIÓN DEL NEGOCIO</h3>
+
+            <div class="form-group">
+              <label>Nombre del Comercio *</label>
+              <input type="text" id="pub-business-name" class="form-input" placeholder="Ej. Pizzería Roma" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Ciudad *</label>
+                <select id="pub-city-id" class="form-input"></select>
+              </div>
+              <div class="form-group flex-1">
+                <label>Categoría *</label>
+                <select id="pub-category-id" class="form-input"></select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>WhatsApp del Comercio (para recibir clientes) *</label>
+              <input type="tel" id="pub-whatsapp" class="form-input" placeholder="Ej. +584141234567" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Instagram (opcional)</label>
+                <input type="text" id="pub-instagram" class="form-input" placeholder="sin @">
+              </div>
+              <div class="form-group flex-1">
+                <label>TikTok (opcional)</label>
+                <input type="text" id="pub-tiktok" class="form-input" placeholder="sin @">
+              </div>
+            </div>
+
+            <h3 class="form-section-header">INFORMACIÓN DE LA PROMOCIÓN</h3>
+
+            <div class="form-group">
+              <label>Título de la Oferta *</label>
+              <input type="text" id="pub-title" class="form-input" placeholder="Ej. 2x1 en Pizzas Familiares" required>
+            </div>
+
+            <div class="form-group">
+              <label>Descripción detallada *</label>
+              <textarea id="pub-description" class="form-input form-textarea" placeholder="Incluye condiciones, qué incluye la oferta y horarios..." required></textarea>
+            </div>
+
+            <!-- Flyer Upload -->
+            <div class="form-group">
+              <label>Flyer o Imagen del Anuncio *</label>
+              <div class="upload-dropzone" onclick="document.getElementById('pub-image-file').click()">
+                <input type="file" id="pub-image-file" accept="image/*" style="display: none;" onchange="app.handleImageUpload(event)">
+                <div id="upload-placeholder">
+                  <div class="upload-icon">🖼️</div>
+                  <div class="upload-title">Toca para seleccionar tu flyer</div>
+                  <div class="upload-sub">Formato vertical o cuadrado (JPG, PNG, WebP)</div>
+                </div>
+                <div id="upload-preview-box" style="display: none;">
+                  <img id="upload-preview-img" src="" alt="Preview">
+                  <div class="upload-change-tag">Cambiar imagen</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="pub-error" class="alert-error" style="display: none;"></div>
+
+            <button class="btn btn-primary btn-large" onclick="app.proceedToStep2()">Continuar a Vista Previa</button>
+          </div>
+
+          <!-- STEP 2: PREVIEW -->
+          <div id="publish-step-2" class="publish-step-content">
+            <div class="preview-notice">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span>ASÍ VERÁ TU PROMOCIÓN EL PÚBLICO</span>
+            </div>
+
+            <!-- Preview Card -->
+            <div id="preview-card-container" class="preview-card-wrapper">
+              <!-- Rendered card -->
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-secondary flex-1" onclick="app.goToStep(1)">Modificar datos</button>
+              <button class="btn btn-primary flex-1" onclick="app.proceedToStep3()">Confirmar y Pagar</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: PAYMENT -->
+          <div id="publish-step-3" class="publish-step-content">
+            <div class="payment-pricing-card">
+              <div class="rate-badge">TARIFA DE LANZAMIENTO</div>
+              <div class="pricing-headline">PUBLICA DURANTE 7 DÍAS</div>
+              <div class="pricing-amount"><span id="pricing-rate-display">0.99</span> USD</div>
+              <div class="pricing-note">Sin comisiones por ventas. Los clientes van directo a tu WhatsApp.</div>
+            </div>
+
+            <div class="payment-instructions-card">
+              <div class="instructions-header">DATOS DE PAGO MÓVIL</div>
+              <div class="instructions-body" id="payment-instructions-content">
+                <!-- Dynamically loaded Pago Movil info -->
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Método de Pago</label>
+              <select id="pub-payment-method" class="form-input">
+                <option value="Pago Móvil">Pago Móvil</option>
+                <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                <option value="Binance Pay / USDT">Binance Pay / USDT</option>
+                <option value="Efectivo">Efectivo en Oficina</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Referencia o Número de Comprobante *</label>
+              <input type="text" id="pub-payment-ref" class="form-input" placeholder="Ej. 123456 (últimos dígitos)" required>
+            </div>
+
+            <div id="payment-error" class="alert-error" style="display: none;"></div>
+
+            <div class="btn-row">
+              <button class="btn btn-secondary flex-1" onclick="app.goToStep(2)">Atrás</button>
+              <button class="btn btn-primary flex-1" id="submit-promo-btn" onclick="app.submitPromotion()">Enviar Anuncio</button>
+            </div>
+          </div>
+
+          <!-- STEP 4: SUCCESS -->
+          <div id="publish-step-4" class="publish-step-content">
+            <div class="success-box">
+              <div class="success-icon">🎉</div>
+              <h2>¡Tu promoción ha sido enviada!</h2>
+              <p>Tu anuncio pasará por revisión para ser publicado en 7D App.</p>
+              
+              <div class="success-receipt">
+                <div class="receipt-row">
+                  <span>Comercio:</span>
+                  <b id="success-business"></b>
+                </div>
+                <div class="receipt-row">
+                  <span>Tarifa:</span>
+                  <b><span id="success-price">0.99</span> USD</b>
+                </div>
+                <div class="receipt-row">
+                  <span>Referencia:</span>
+                  <b id="success-ref"></b>
+                </div>
+              </div>
+
+              <div class="admin-support-box">
+                <p>Para acelerar la activación, envía el comprobante a nuestro WhatsApp de soporte:</p>
+                <a id="send-proof-whatsapp-btn" class="btn btn-whatsapp btn-large" target="_blank" rel="noopener">
+                  <span>Enviar Comprobante por WhatsApp</span>
+                </a>
+              </div>
+
+              <button class="btn btn-secondary" onclick="app.showScreen('feed')">Volver al Inicio</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: ADMIN PANEL -->
+      <section id="screen-admin" class="screen">
+        <div class="admin-container">
+          <div class="admin-header">
+            <div>
+              <h2 class="admin-title">Panel de Administración</h2>
+              <p class="admin-sub">Gestión general de 7D App</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="app.logoutAdmin()">Cerrar Sesión</button>
+          </div>
+
+          <!-- Admin Tabs -->
+          <div class="admin-tabs">
+            <button class="admin-tab active" onclick="app.switchAdminTab('dashboard')">Dashboard</button>
+            <button class="admin-tab" onclick="app.switchAdminTab('pending')">Pendientes (<span id="admin-pending-badge">0</span>)</button>
+            <button class="admin-tab" onclick="app.switchAdminTab('active')">Activos (<span id="admin-active-badge">0</span>)</button>
+<button class="admin-tab" onclick="app.switchAdminTab('expired')">Expiradas (<span id="admin-expired-badge">0</span>)</button>
+            <button class="admin-tab" onclick="app.switchAdminTab('cities')">📍 Ciudades (<span id="admin-cities-badge">0</span>)</button>
+            <button class="admin-tab" onclick="app.switchAdminTab('categories')">🏷️ Categorías (<span id="admin-cats-badge">0</span>)</button>
+            <button class="admin-tab" onclick="app.switchAdminTab('settings')">Ajustes & Pago Móvil</button>
+          </div>
+
+          <!-- TAB 1: DASHBOARD & CLICKS ANALYTICS -->
+          <div id="admin-tab-dashboard" class="admin-tab-pane active">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-num" id="metric-active">0</div>
+                <div class="metric-label">Flyers Activos</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-num" id="metric-pending">0</div>
+                <div class="metric-label">Por Aprobar</div>
+              </div>
+              <div class="metric-card highlight">
+                <div class="metric-num" id="metric-total-clicks">0</div>
+                <div class="metric-label">Total Clics a WhatsApp</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-num"><span id="metric-rate">0.99</span>$</div>
+                <div class="metric-label">Tarifa Actual</div>
+              </div>
+            </div>
+
+            <!-- Click Registry per Advertiser -->
+            <div class="admin-section">
+              <div class="admin-section-header">
+                <h3>📊 REGISTRO DE CLICS POR ANUNCIANTE</h3>
+                <span class="refresh-indicator" onclick="app.renderAdminDashboard()">Actualizar</span>
+              </div>
+              <div id="clicks-ranking-container" class="clicks-ranking-list">
+                <!-- Dynamically populated clicks per advertiser -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: PENDING APPROVAL -->
+          <div id="admin-tab-pending" class="admin-tab-pane">
+            <div class="admin-section-header">
+              <h3>FLYERS PENDIENTES DE REVISIÓN Y PAGO</h3>
+            </div>
+            <div id="admin-pending-list" class="admin-cards-list"></div>
+          </div>
+
+          <!-- TAB 3: ACTIVE PROMOS -->
+          <div id="admin-tab-active" class="admin-tab-pane">
+            <div class="admin-section-header">
+              <h3>FLYERS PUBLICADOS ACTUALMENTE</h3>
+            </div>
+            <div id="admin-active-list" class="admin-cards-list"></div>
+          </div>
+
+          <!-- TAB 4: GESTIÓN DE CIUDADES -->
+<div id="admin-tab-expired" class="admin-tab-pane">
+  <div class="admin-section-header">
+    <h3>FLYERS EXPIRADOS</h3>
+  </div>
+  <div id="admin-expired-list" class="admin-cards-list"></div>
+</div>          
+<div id="admin-tab-cities" class="admin-tab-pane">
+            <!-- Formulario agregar nueva ciudad -->
+            <div class="admin-entity-form">
+              <h4><span>📍</span> Agregar Nueva Ciudad</h4>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Nombre de la Ciudad *</label>
+                  <input type="text" id="new-city-name" class="form-input" placeholder="Ej. Puerto La Cruz, Caracas, Anaco">
+                </div>
+                <div class="form-group flex-1">
+                  <label>Estado / Región</label>
+                  <input type="text" id="new-city-state" class="form-input" placeholder="Ej. Anzoátegui, Monagas">
+                </div>
+              </div>
+html
+<div class="form-row">
+  <div class="form-group flex-1">
+    <label>Latitud *</label>
+    <input type="number" id="new-city-lat" class="form-input"
+      placeholder="Ej. 8.8875" step="any" min="-90" max="90" required>
+  </div>
+  <div class="form-group flex-1">
+    <label>Longitud *</label>
+    <input type="number" id="new-city-lng" class="form-input"
+      placeholder="Ej. -64.2454" step="any" min="-180" max="180" required>
+  </div>
+</div>
+
+ <button class="btn btn-primary" onclick="app.addCity(event)" style="margin-top: 8px;">＋ Agregar Ciudad</button>
+            </div>
+
+            <div class="admin-section-header" style="margin-top: 24px; margin-bottom: 14px;">
+              <h3>CIUDADES REGISTRADAS (ACTIVAR / DESACTIVAR)</h3>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+              Las ciudades desactivadas se ocultan automáticamente del selector del usuario y del formulario de anuncios.
+            </p>
+            <div id="admin-cities-list" class="admin-entities-list">
+              <!-- Dynamically populated cities -->
+            </div>
+          </div>
+
+          <!-- TAB 5: GESTIÓN DE CATEGORÍAS -->
+          <div id="admin-tab-categories" class="admin-tab-pane">
+            <!-- Formulario agregar nueva categoría -->
+            <div class="admin-entity-form">
+              <h4><span>🏷️</span> Agregar Nueva Categoría</h4>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Nombre de la Categoría *</label>
+                  <input type="text" id="new-cat-name" class="form-input" placeholder="Ej. Mascotas & Veterinaria">
+                </div>
+                <div class="form-group" style="width: 140px;">
+                  <label>Ícono / Emoji</label>
+                  <input type="text" id="new-cat-icon" class="form-input text-center" placeholder="🐾" maxlength="4">
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="app.addCategory(event)" style="margin-top: 8px;">＋ Agregar Categoría</button>
+            </div>
+
+            <div class="admin-section-header" style="margin-top: 24px; margin-bottom: 14px;">
+              <h3>CATEGORÍAS REGISTRADAS (ACTIVAR / DESACTIVAR)</h3>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+              Las categorías desactivadas se ocultan de la barra horizontal del feed y del formulario de publicación.
+            </p>
+            <div id="admin-categories-list" class="admin-entities-list">
+              <!-- Dynamically populated categories -->
+            </div>
+          </div>
+
+          <!-- TAB 6: SETTINGS, TARIFA & PAGO MOVIL -->
+          <div id="admin-tab-settings" class="admin-tab-pane">
+            <div class="settings-form-card">
+              <h3>⚙️ AJUSTES DE TARIFA Y PAGOS</h3>
+              
+              <div class="form-group">
+                <label>Tarifa de Publicación (USD) *</label>
+                <div class="input-with-affix">
+                  <input type="number" step="0.01" id="settings-price" class="form-input" value="0.99">
+                  <span class="input-suffix">USD</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Duración de la Publicación (Días)</label>
+                <input type="number" id="settings-duration" class="form-input" value="7">
+              </div>
+
+              <div class="form-group">
+
+              <div class="form-group">
+                <label>WhatsApp de Soporte / Admin *</label>
+                <input type="tel" id="settings-whatsapp" class="form-input" value="+584228045737">
+              </div>
+
+              <h4 class="form-section-header" style="margin-top: 20px;">DATOS DE PAGO MÓVIL</h4>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Teléfono Pago Móvil</label>
+                  <input type="text" id="settings-pagomovil-phone" class="form-input" placeholder="0414-1234567">
+                </div>
+                <div class="form-group flex-1">
+                  <label>Cédula / RIF</label>
+                  <input type="text" id="settings-pagomovil-id" class="form-input" placeholder="V-12345678">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Banco</label>
+                  <input type="text" id="settings-pagomovil-bank" class="form-input" placeholder="Banesco / Mercantil">
+                </div>
+                <div class="form-group flex-1">
+                  <label>Titular de la cuenta</label>
+                  <input type="text" id="settings-pagomovil-name" class="form-input" placeholder="Nombre completo">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Instrucciones de Pago adicionales</label>
+                <textarea id="settings-instructions" class="form-input form-textarea" placeholder="Instrucciones para el cliente..."></textarea>
+              </div>
+
+
+              <!-- TEST DE COMUNICACIONES CON LA BASE DE DATOS -->
+              <div class="db-test-card" style="margin-top: 24px; padding: 20px; background: rgba(99, 102, 241, 0.08); border: 1.5px solid rgba(99, 102, 241, 0.35); border-radius: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+                  <div>
+                    <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+                      <span>📡</span> TEST DE COMUNICACIONES CON LA BASE DE DATOS
+                    </h4>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);">
+                      Diagnóstico en vivo de lectura, escritura, latencia y sincronización en tiempo real en internet.
+                    </p>
+                  </div>
+                  <button class="btn btn-primary btn-sm" onclick="app.runDatabaseCommunicationTest()" id="btn-run-db-test" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); border: none; font-weight: 800; padding: 8px 16px;">
+                    <span>🚀 Iniciar Test en Vivo</span>
+                  </button>
+                </div>
+
+                <div id="db-test-results" style="display: none; margin-top: 14px;">
+                  <div class="db-test-step" id="db-step-internet" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">1. Conectividad a Internet / Google Cloud</span>
+                    <span id="db-step-internet-status" class="test-badge badge-pending">⏳ Esperando</span>
+                  </div>
+                  <div class="db-test-step" id="db-step-write" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">2. Prueba de Escritura (Write Payload)</span>
+                    <span id="db-step-write-status" class="test-badge badge-pending">⏳ Esperando</span>
+                  </div>
+                  <div class="db-test-step" id="db-step-read" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">3. Prueba de Lectura (Read & Query)</span>
+                    <span id="db-step-read-status" class="test-badge badge-pending">⏳ Esperando</span>
+                  </div>
+                  <div class="db-test-step" id="db-step-sync" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">4. Sincronización en Tiempo Real (Real-time Sync)</span>
+                    <span id="db-step-sync-status" class="test-badge badge-pending">⏳ Esperando</span>
+                  </div>
+                  <div class="db-test-step" id="db-step-cleanup" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">5. Limpieza de Registros Temporales</span>
+                    <span id="db-step-cleanup-status" class="test-badge badge-pending">⏳ Esperando</span>
+                  </div>
+
+                  <div style="margin-top: 14px; background: #0c0a17; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; color: #94A3B8; font-size: 11px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; font-family: monospace;">
+                      <span>TERMINAL DE DIAGNÓSTICO EN TIEMPO REAL</span>
+                      <span id="db-test-timer">0ms</span>
+                    </div>
+                    <div id="db-test-console" style="font-family: monospace; font-size: 12px; color: #10B981; max-height: 200px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;">> Sistema listo para iniciar diagnóstico de red...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="settings-save-success" class="alert-success" style="display: none; margin-top: 16px;">¡Configuración guardada correctamente!</div>
+
+              <button class="btn btn-primary btn-large" onclick="app.saveAdminSettings()">Guardar Todos los Cambios</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button: Publicar -->
+    <button id="fab-publish" class="fab-btn" onclick="app.showScreen('publish')" title="Publicar Promoción">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      <span>Publicar Anuncio</span>
+    </button>
+
+    <!-- MODAL: Full Screen Flyer Viewer -->
+    <div id="modal-fullscreen" class="modal-fullscreen" onclick="app.closeFullScreenImage()">
+      <div class="modal-fullscreen-content" onclick="event.stopPropagation()">
+        <img id="fullscreen-img" src="" alt="Flyer en pantalla completa">
+        <button class="modal-close-btn" onclick="app.closeFullScreenImage()" title="Cerrar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <div class="fullscreen-top-badge">7D App • Pantalla Completa</div>
+      </div>
+    </div>
+
+    <!-- MODAL: City Selector (Top-anchored, Dynamic Height) -->
+    <div id="modal-city" class="modal-overlay" onclick="app.closeCityModal()">
+      <div class="bottom-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg class="icon" viewBox="0 0 24 24" style="width: 22px; height: 22px; flex-shrink: 0;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <h3 style="font-size: 20px; font-weight: 900; color: #FFFFFF;">Selecciona tu Ciudad</h3>
+          </div>
+          <button class="icon-btn" onclick="app.closeCityModal()" title="Cerrar">✕</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+          Elige tu localidad para ver las promociones vigentes de tu zona:
+        </p>
+        <div class="sheet-body" id="cities-modal-list">
+          <!-- Dynamically populated cities -->
+        </div>
+      </div>
+    </div>
+
+   
+  <!-- Floating Toast Notification -->
+  <div id="app-toast" class="app-toast" style="display: none;">
+    <span id="app-toast-msg">Mensaje</span>
+  </div>
+
+  <script src="app.js"></script>
+<script>
+(function(){
+  function syncDuration(){
+    if(!window.app||!app.settings)return;
+    var d=parseInt(app.settings.publicationDurationDays)||7;
+    var h=document.querySelector('.hero-badge');
+    if(h)h.textContent=String.fromCodePoint(0x1F525)+' AN\u00daNCIATE HOY POR '+d+' D\u00cdAS';
+    var c=document.querySelector('.cities-hero-sub');
+    if(c)c.textContent='Descubre las promociones exclusivas en tu ciudad';
+    var p=document.querySelector('.pricing-headline');
+    if(p)p.textContent='PUBLICA DURANTE '+d+' D\u00CDAS';
+  }
+  
+
+})();
+</script>
+</body>
+</html>
