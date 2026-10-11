@@ -1,14 +1,3 @@
-// Runtime environment initialization
-window.process = window.process || {};
-window.process.env = window.process.env || {};
-if (!window.process.env.ADMIN_PIN) {
-  if (typeof window.AndroidNative !== 'undefined' && typeof window.AndroidNative.getAdminPin === 'function') {
-    window.process.env.ADMIN_PIN = window.AndroidNative.getAdminPin();
-  } else {
-    window.process.env.ADMIN_PIN = '110291';
-  }
-}
-
 // Configuración oficial de Firebase Firestore en tiempo real (dapp-f5e40)
 window.firebaseConfig = {
   apiKey: "AIzaSyA1F0hyr8qUGx5DoqPO8JhV073NXr35NYI",
